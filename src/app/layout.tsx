@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Cairo, Tajawal } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -49,6 +50,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <Script
+          id="google-gtag-script"
+          strategy="beforeInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-7L0N71K7LT"
+        />
+        <Script id="google-gtag-inline" strategy="beforeInteractive">
+          {`window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+
+          gtag('config', 'G-7L0N71K7LT');`}
+        </Script>
+      </head>
       <body
         className={`${cairo.variable} ${tajawal.variable} font-cairo antialiased bg-background text-foreground`}
       >
