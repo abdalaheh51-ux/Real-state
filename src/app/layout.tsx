@@ -29,10 +29,11 @@ export const metadata: Metadata = {
     "استشارة عقارية مجانية",
     "سعر المتر التجمع الخامس",
   ],
-  authors: [{ name: "Real Estate" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+      icon: "/Gemini_Generated_Image_l5cv03l5cv03l5cv.png",
   },
+  authors: [{ name: "Real Estate" }],
+
   openGraph: {
     title: "دليلك الشامل للمقارنة بين أفضل 5 مجمعات سكنية 2026",
     description:
