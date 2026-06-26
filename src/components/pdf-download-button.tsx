@@ -29,7 +29,10 @@ export function PdfDownloadButton({
     setLoading(true);
     try {
       const res = await fetch("/api/download-pdf", { method: "GET" });
-      if (!res.ok) throw new Error("generation failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail ?? body?.error ?? "request failed");
+      }
 
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -41,8 +44,10 @@ export function PdfDownloadButton({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success("تم تحميل ملف المقارنة الشامل بنجاح");
-    } catch {
-      toast.error("تعذّر إنشاء الملف، حاول مرة أخرى");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "generation failed";
+      toast.error(`تعذّر إنشاء الملف: ${message}`);
     } finally {
       setLoading(false);
     }
