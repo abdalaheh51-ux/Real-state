@@ -142,7 +142,7 @@ export function BookingDialog({
         ) : (
           <>
             <DialogHeader className="px-6 pt-6 pb-2">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge
                   variant="secondary"
                   className="gap-1 bg-primary/10 text-primary border-primary/20"
@@ -276,20 +276,20 @@ export function BookingDialog({
                 />
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-2 pt-2">
+              <DialogFooter className="gap-2 sm:gap-2 pt-2 flex-col sm:flex-row">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => onOpenChange(false)}
                   disabled={status === "loading"}
-                  className="h-11"
+                  className="h-11 w-full sm:w-auto"
                 >
                   إلغاء
                 </Button>
                 <Button
                   type="submit"
                   disabled={status === "loading"}
-                  className="h-11 gap-2 shadow-[0_6px_18px_-4px_oklch(0.45_0.12_162/0.4)] flex-1"
+                  className="h-11 gap-2 shadow-[0_6px_18px_-4px_oklch(0.45_0.12_162/0.4)] flex-1 w-full sm:w-auto"
                 >
                   {status === "loading" ? (
                     <>

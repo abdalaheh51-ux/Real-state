@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 
 interface PdfDownloadButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost";
-  size?: "default" | "sm" | "lg" | "xl";
+  size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   label?: string;
+  shortLabel?: string;
   withIcon?: boolean;
 }
 
@@ -19,6 +20,7 @@ export function PdfDownloadButton({
   size = "lg",
   className,
   label = "تحميل ملف المقارنة الشامل (PDF) مجاناً",
+  shortLabel = "تحميل PDF مجاناً",
   withIcon = true,
 }: PdfDownloadButtonProps) {
   const [loading, setLoading] = useState(false);
@@ -61,8 +63,9 @@ export function PdfDownloadButton({
         </>
       ) : withIcon ? (
         <>
-          <Download className="size-4" />
-          {label}
+          <Download className="size-4 shrink-0" />
+          <span className="sm:hidden">{shortLabel}</span>
+          <span className="hidden sm:inline">{label}</span>
         </>
       ) : (
         <>
