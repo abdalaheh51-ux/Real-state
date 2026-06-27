@@ -3,14 +3,14 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// ربط السوبابيز بالمفاتيح اللي حطيناها في الـ .env
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function uploadPdfDocument(file: File, documentTitle: string) {
   try {
+    // ربط السوبابيز بالمفاتيح اللي حطيناها في الـ .env
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
     // 1. توليد اسم فريد للملف عشان الملفات ماتتمسحش لو اتكرر الاسم
     const fileName = `${Date.now()}-${file.name}`
 

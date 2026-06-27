@@ -1,8 +1,15 @@
 import { savePdfDocument } from '@/lib/upload-pdf'
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   try {
+    // تعريف Supabase داخل الدالة
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
     const { pdfUrl, title } = await req.json()
 
     // التحقق من البيانات المطلوبة
