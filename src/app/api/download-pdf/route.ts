@@ -4,21 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// تهيئة Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("[download-pdf] Missing Supabase credentials");
-}
-
-const supabase = createClient(supabaseUrl || "", supabaseServiceKey || "", {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
-
 /**
  * التحقق من API Key
  */
@@ -61,6 +46,28 @@ function checkRateLimit(clientIp: string, maxRequests = 5, windowMs = 60000): bo
 
 export async function GET(req: NextRequest) {
   try {
+    // تهيئة Supabase داخل الدالة
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[download-pdf] Missing Supabase credentials");
+      return NextResponse.json(
+        {
+          error: "خطأ في الخادم",
+          detail: "بيانات الاتصال ناقصة",
+        },
+        { status: 500 }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
     // التحقق من API Key
     if (!verifyApiKey(req)) {
       return NextResponse.json(
