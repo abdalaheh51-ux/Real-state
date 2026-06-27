@@ -28,12 +28,18 @@ export function PdfDownloadButton({
   async function handleDownload() {
     setLoading(true);
     try {
-      // تحميل ملف PDF ثابت من مجلد public
-      const pdfUrl = "/دليل-المقارنة-أفضل-5-مجمعات-2026.pdf";
-      const res = await fetch(pdfUrl);
-      
+      // استدعاء API محمي مع API Key
+      const res = await fetch("/api/download-pdf", {
+        method: "GET",
+        headers: {
+          "x-api-key": process.env.NEXT_PUBLIC_PDF_API_KEY || "",
+        },
+      });
+
       if (!res.ok) {
-        throw new Error("فشل تحميل الملف. تأكد من وجود الملف في مجلد public");
+        const body = await res.json().catch(() => null);
+        const errorMsg = body?.detail || body?.error || "فشل الطلب";
+        throw new Error(errorMsg);
       }
 
       const blob = await res.blob();
@@ -47,8 +53,7 @@ export function PdfDownloadButton({
       URL.revokeObjectURL(url);
       toast.success("تم تحميل ملف المقارنة الشامل بنجاح");
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "فشل التحميل";
+      const message = err instanceof Error ? err.message : "فشل التحميل";
       toast.error(`تعذّر تحميل الملف: ${message}`);
     } finally {
       setLoading(false);
