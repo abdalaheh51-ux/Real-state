@@ -1,38 +1,45 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, FileText } from "lucide-react";
+import { Download, Loader2, FileText } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface PdfDownloadButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost";
-  size?: "default" | "sm" | "lg" | "xl";
+  size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   label?: string;
+  shortLabel?: string;
   withIcon?: boolean;
 }
 
-/**
- * تنزّل ملف PDF ثابت من مجلد public/.
- *
- * الملف (comparison-guide-2026.pdf) تم توليده مسبقاً ويُخدَّم كملف ثابت،
- * لذا لا يحتاج الموقع إلى Playwright أو Chromium في وقت التشغيل — التنزيل فوري.
- */
 export function PdfDownloadButton({
   variant = "default",
   size = "lg",
   className,
   label = "تحميل ملف المقارنة الشامل (PDF) مجاناً",
+  shortLabel = "تحميل PDF مجاناً",
   withIcon = true,
 }: PdfDownloadButtonProps) {
-  function handleDownload() {
-    // ملف PDF ثابت في public/ — تنزيل مباشر بدون أي معالجة على الخادم.
-    const a = document.createElement("a");
-    a.href = "/comparison-guide-2026.pdf";
-    a.download = "دليل-المقارنة-أفضل-5-مجمعات-2026.pdf";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDownload() {
+    setLoading(true);
+    try {
+      const a = document.createElement("a");
+      a.href = "/دليل-المقارنة-أفضل-5-مجمعات-2026.pdf";
+      a.download = "دليل-المقارنة-أفضل-5-مجمعات-2026.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("تم تحميل ملف المقارنة الشامل بنجاح");
+    } catch (err) {
+      toast.error("تعذّر تحميل الملف");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -40,12 +47,19 @@ export function PdfDownloadButton({
       variant={variant}
       size={size}
       onClick={handleDownload}
+      disabled={loading}
       className={cn("gap-2", className)}
     >
-      {withIcon ? (
+      {loading ? (
         <>
-          <Download className="size-4" />
-          {label}
+          <Loader2 className="size-4 animate-spin" />
+          جارٍ إنشاء الملف...
+        </>
+      ) : withIcon ? (
+        <>
+          <Download className="size-4 shrink-0" />
+          <span className="sm:hidden">{shortLabel}</span>
+          <span className="hidden sm:inline">{label}</span>
         </>
       ) : (
         <>

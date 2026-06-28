@@ -9,8 +9,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // <-- هذا السطر مهم جداً لـ Supabase
 }
 
 model User {
@@ -42,4 +43,11 @@ model Consultation {
   status       String   @default("pending") // pending | contacted | closed
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  title     String
+  pdfUrl    String   // 👈 الحقل ده اللي هيشيل رابط الـ PDF
+  createdAt DateTime @default(now())
 }

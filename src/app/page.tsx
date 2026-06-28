@@ -37,7 +37,10 @@ import {
   Lock,
   Camera,
 } from "lucide-react";
-import Image from "next/image";
+import { BookingDialog } from "@/components/booking-dialog";
+import { PdfDownloadButton } from "@/components/pdf-download-button";
+import { SafeImage } from "@/components/safe-image";
+import { MobileNav } from "@/components/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,8 +62,6 @@ import {
   mapLocations,
   type Compound,
 } from "@/lib/compounds-data";
-import { BookingDialog } from "@/components/booking-dialog";
-import { PdfDownloadButton } from "@/components/pdf-download-button";
 import { cn } from "@/lib/utils";
 
 const iconMap = {
@@ -173,9 +174,16 @@ const stagger = {
 export default function Home() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingCompound, setBookingCompound] = useState<string | undefined>();
-  const [view, setView] = useState<"table" | "cards">("table");
+  const [view, setView] = useState<"table" | "cards">("cards");
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [activeMapPin, setActiveMapPin] = useState<string | null>(null);
+
+  useEffect(() => {
+    const prefersCards = window.matchMedia("(max-width: 639px)").matches;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setView(prefersCards ? "cards" : "table");
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -254,19 +262,20 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <MobileNav navLinks={navLinks} onBook={() => openBooking()} />
             <Button
               variant="ghost"
-              size="sm"
-              className="hidden sm:inline-flex text-muted-foreground hover:text-foreground"
+              size="default"
+              className="hidden sm:inline-flex text-muted-foreground hover:text-foreground h-11 min-h-11"
               onClick={() => openBooking()}
             >
               <Phone className="size-4" />
               استشارة مجانية
             </Button>
             <Button
-              size="sm"
+              size="default"
               onClick={() => openBooking()}
-              className="gap-1.5 shadow-[0_4px_12px_-2px_oklch(0.45_0.12_162/0.35)]"
+              className="gap-1.5 h-11 min-h-11 shadow-[0_4px_12px_-2px_oklch(0.45_0.12_162/0.35)]"
             >
               <CalendarCheck className="size-4" />
               احجز الآن
@@ -324,12 +333,12 @@ export default function Home() {
               >
                 <PdfDownloadButton
                   size="lg"
-                  className="w-full sm:w-auto h-13 text-base shadow-[0_12px_32px_-6px_oklch(0.45_0.12_162/0.55)] hover:shadow-[0_16px_38px_-6px_oklch(0.45_0.12_162/0.65)] hover:-translate-y-0.5 transition-all"
+                  className="w-full sm:w-auto h-12 min-h-12 text-base shadow-[0_12px_32px_-6px_oklch(0.45_0.12_162/0.55)] hover:shadow-[0_16px_38px_-6px_oklch(0.45_0.12_162/0.65)] hover:-translate-y-0.5 active:scale-[0.98] transition-all"
                 />
                 <Button
                   variant="outline"
                   size="lg"
-                  className="w-full sm:w-auto h-13 text-base gap-2 border-2 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50 hover:-translate-y-0.5 transition-all"
+                  className="w-full sm:w-auto h-12 min-h-12 text-base gap-2 border-2 border-primary/30 text-primary hover:bg-primary/5 hover:border-primary/50 hover:-translate-y-0.5 active:scale-[0.98] transition-all"
                   onClick={() => openBooking()}
                 >
                   <CalendarCheck className="size-4" />
@@ -364,6 +373,7 @@ export default function Home() {
                     variants={fadeUp}
                     custom={i}
                     whileHover={{ y: -4 }}
+                    whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 300, damping: 22 }}
                   >
                     <div className="glass rounded-2xl p-4 sm:p-5 flex items-center gap-3.5 h-full">
@@ -403,13 +413,14 @@ export default function Home() {
           >
             <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-pop ring-1 ring-border/60 group">
               <div className="aspect-[16/8] sm:aspect-[16/6] relative">
-                <Image
+                <SafeImage
                   src="/images/hero-aerial.png"
                   alt="عرض جوي لمجمع سكني فاخر في القاهرة الجديدة"
                   fill
                   priority
                   sizes="(max-width: 768px) 100vw, 1200px"
                   className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                  fallbackGradient="from-emerald-800 via-teal-900 to-emerald-950"
                 />
                 {/* Stronger gradient overlays for depth + text legibility + blend with hero */}
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/15 to-transparent" />
@@ -463,7 +474,7 @@ export default function Home() {
                 عمولتنا تأتي من المطوّر بعد البيع، أما نصيحتك فمجانية دائماً —
                 حتى لو لم تشترِ شيئاً.
               </p>
-              <div className="flex items-center gap-6 shrink-0">
+              <div className="flex flex-wrap items-center justify-center gap-6 shrink-0">
                 <div className="text-center">
                   <div className="text-3xl font-extrabold text-gradient tabular leading-none">
                     15
@@ -496,7 +507,8 @@ export default function Home() {
               </h2>
               <p className="mt-4 text-muted-foreground leading-relaxed">
                 القيم المُظلَّلة بالأخضر هي الأفضل في كل معيار (أقل سعر، أقرب تسليم،
-                أعلى مساحات خضراء...). مرّر الجدول يميناً ويساراً على الجوال.
+                أعلى مساحات خضراء...). على الجوال يُفضَّل عرض البطاقات؛ في الجدول
+                اسحب للتمرير يميناً ويساراً.
               </p>
             </div>
 
@@ -513,6 +525,9 @@ export default function Home() {
                   <TabsTrigger value="cards" className="gap-1.5">
                     <Building2 className="size-3.5" />
                     عرض بطاقات
+                    <span className="sm:hidden text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded-full">
+                      مُفضّل
+                    </span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -638,9 +653,9 @@ export default function Home() {
                               className="p-3 text-center border-t-2 border-border/60 bg-card"
                             >
                               <Button
-                                size="sm"
+                                size="default"
                                 variant="outline"
-                                className="w-full gap-1.5 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors"
+                                className="w-full min-h-11 h-11 gap-1.5 hover:bg-primary hover:text-primary-foreground hover:border-primary transition-colors active:scale-[0.98]"
                                 onClick={() => openBooking(c.id)}
                               >
                                 <CalendarCheck className="size-3.5" />
@@ -683,12 +698,13 @@ export default function Home() {
                         <div className={cn("h-1.5 bg-gradient-to-r", accent.gradient)} />
                         {/* Compound image */}
                         <div className="relative h-36 overflow-hidden">
-                          <Image
+                          <SafeImage
                             src={c.image}
                             alt={`صورة ${c.name}`}
                             fill
                             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             className="object-cover transition-transform duration-700 hover:scale-105"
+                            fallbackGradient={accent.gradient}
                           />
                           <div
                             className={cn(
@@ -943,12 +959,13 @@ export default function Home() {
                           <div className="lg:w-80 shrink-0 p-6 sm:p-7 lg:border-l border-border/60 bg-muted/20">
                             {/* Compound image */}
                             <div className="relative h-44 sm:h-48 rounded-xl overflow-hidden mb-5 ring-1 ring-border/60 group/img">
-                              <Image
+                              <SafeImage
                                 src={c.image}
                                 alt={`صورة ${c.name}`}
                                 fill
                                 sizes="(max-width: 1024px) 100vw, 320px"
                                 className="object-cover transition-transform duration-700 group-hover/img:scale-105"
+                                fallbackGradient={accent.gradient}
                               />
                               <div
                                 className={cn(
@@ -1117,8 +1134,8 @@ export default function Home() {
                 أين تقع المجمعات الخمسة؟
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed">
-                نظرة جغرافية سريعة على توزيع المشاريع في القاهرة الجديدة. مرّر
-                فوق نقطة لرؤية اسم المجمع ومنطقته.
+                نظرة جغرافية سريعة على توزيع المشاريع في القاهرة الجديدة. اضغط على
+                أي نقطة لرؤية اسم المجمع ومنطقته.
               </p>
             </div>
 
@@ -1170,30 +1187,48 @@ export default function Home() {
                     {/* Location pins */}
                     {mapLocations.map((loc) => {
                       const accent = accentMap[loc.accent];
+                      const isActive = activeMapPin === loc.compoundId;
                       return (
-                        <div
+                        <button
                           key={loc.compoundId}
-                          className="group/pin absolute -translate-x-1/2 -translate-y-1/2 z-10"
+                          type="button"
+                          aria-label={`${loc.name} — ${loc.area}`}
+                          aria-pressed={isActive}
+                          onClick={() =>
+                            setActiveMapPin((prev) =>
+                              prev === loc.compoundId ? null : loc.compoundId
+                            )
+                          }
+                          className="group/pin absolute -translate-x-1/2 -translate-y-1/2 z-10 touch-manipulation"
                           style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
                         >
                           {/* Pulse ring */}
                           <span
                             className={cn(
                               "absolute inset-0 rounded-full opacity-40 animate-ping-slow",
-                              accent.bg
+                              accent.bg,
+                              isActive && "opacity-60"
                             )}
                           />
                           {/* Pin */}
                           <div
                             className={cn(
-                              "relative size-7 sm:size-9 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg ring-2 ring-white cursor-pointer transition-transform group-hover/pin:scale-125",
-                              accent.bg
+                              "relative size-9 sm:size-10 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg ring-2 ring-white cursor-pointer transition-transform group-hover/pin:scale-125 active:scale-110",
+                              accent.bg,
+                              isActive && "scale-125 ring-primary"
                             )}
                           >
-                            <MapPin className="size-3.5 sm:size-4" />
+                            <MapPin className="size-4 sm:size-4" />
                           </div>
-                          {/* Tooltip label */}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/pin:opacity-100 transition-opacity pointer-events-none z-20">
+                          {/* Tooltip label — hover + tap */}
+                          <div
+                            className={cn(
+                              "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 transition-opacity z-20 pointer-events-none",
+                              isActive
+                                ? "opacity-100"
+                                : "opacity-0 group-hover/pin:opacity-100"
+                            )}
+                          >
                             <div className="bg-foreground text-background text-xs font-semibold rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
                               {loc.name}
                               <div className="text-[10px] font-normal text-background/70">
@@ -1201,12 +1236,12 @@ export default function Home() {
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
 
-                    {/* Legend */}
-                    <div className="absolute top-3 right-3 sm:top-4 sm:right-4 bg-background/85 backdrop-blur-md rounded-xl border border-border/60 p-2.5 sm:p-3 shadow-soft">
+                    {/* Legend — collapsible on small screens */}
+                    <div className="absolute top-2 right-2 sm:top-4 sm:right-4 max-w-[42%] sm:max-w-none bg-background/85 backdrop-blur-md rounded-xl border border-border/60 p-2 sm:p-3 shadow-soft">
                       <div className="text-[10px] font-bold text-muted-foreground mb-1.5">
                         المجمعات
                       </div>
@@ -1374,6 +1409,7 @@ export default function Home() {
                     variants={fadeUp}
                     custom={i}
                     whileHover={{ y: -6 }}
+                    whileTap={{ scale: 0.98 }}
                     transition={{ type: "spring", stiffness: 300, damping: 22 }}
                   >
                     <Card className="border-border/60 shadow-card hover:shadow-hover transition-shadow h-full flex flex-col rounded-2xl overflow-hidden">
@@ -1582,7 +1618,7 @@ export default function Home() {
                 اتخاذ قرار الشراء الصحيح دون أي ضغط بيعي، فعمولتنا من المطوّر
                 لكنّ نصيحتنا لك.
               </p>
-              <div className="mt-5 flex items-center gap-2">
+              <div className="mt-5 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-400/20 px-3 py-1 text-[11px] text-emerald-300">
                   <span className="size-1.5 rounded-full bg-emerald-400 pulse-ring" />
                   متاح للاستشارة الآن
@@ -1658,23 +1694,26 @@ export default function Home() {
       </footer>
 
       {/* ===== Floating CTA (mobile) ===== */}
-      <div className="fixed bottom-0 inset-x-0 z-40 sm:hidden border-t border-border/80 bg-background/95 backdrop-blur-xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-3 shadow-[0_-8px_28px_-6px_oklch(0.21_0.02_160/0.22)]">
-        <PdfDownloadButton
-          size="default"
-          className="flex-1 h-12 text-sm font-bold"
-          label="تحميل PDF"
-        />
-        <Button
-          size="default"
-          className="flex-1 h-12 text-sm font-bold gap-2"
-          onClick={() => openBooking()}
-        >
-          <CalendarCheck className="size-4" />
-          استشارة مجانية
-        </Button>
-      </div>
+      {!bookingOpen && (
+        <div className="fixed bottom-0 inset-x-0 z-40 sm:hidden border-t border-border/80 bg-background/95 backdrop-blur-xl px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-3 shadow-[0_-8px_28px_-6px_oklch(0.21_0.02_160/0.22)]">
+          <PdfDownloadButton
+            size="default"
+            className="flex-1 h-12 min-h-12 text-sm font-bold active:scale-[0.98]"
+            label="تحميل PDF"
+            shortLabel="تحميل PDF"
+          />
+          <Button
+            size="default"
+            className="flex-1 h-12 min-h-12 text-sm font-bold gap-2 active:scale-[0.98]"
+            onClick={() => openBooking()}
+          >
+            <CalendarCheck className="size-4" />
+            استشارة مجانية
+          </Button>
+        </div>
+      )}
       {/* spacer for mobile floating bar */}
-      <div className="sm:hidden h-20" />
+      <div className="sm:hidden h-[calc(5rem+env(safe-area-inset-bottom))]" />
 
       <BookingDialog
         open={bookingOpen}

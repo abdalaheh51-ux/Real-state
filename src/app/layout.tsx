@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Cairo, Tajawal } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -29,10 +30,11 @@ export const metadata: Metadata = {
     "استشارة عقارية مجانية",
     "سعر المتر التجمع الخامس",
   ],
-  authors: [{ name: "Real Estate" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+      icon: "/Gemini_Generated_Image_l5cv03l5cv03l5cv.png",
   },
+  authors: [{ name: "Real Estate" }],
+
   openGraph: {
     title: "دليلك الشامل للمقارنة بين أفضل 5 مجمعات سكنية 2026",
     description:
@@ -48,9 +50,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <head>
+        <Script id="gtm-script" strategy="beforeInteractive">
+          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
+          var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+          j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','GTM-N4JRMS62');`}
+        </Script>
+      </head>
       <body
         className={`${cairo.variable} ${tajawal.variable} font-cairo antialiased bg-background text-foreground`}
       >
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-N4JRMS62"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          />
+        </noscript>
         {children}
         <Toaster />
         <SonnerToaster position="top-center" richColors />

@@ -12,8 +12,6 @@ const INCLUDE_PATHS = [
   "src",
   "prisma",
   "public",
-  "scripts",
-  "README.md",
   "package.json",
   "bun.lock",
   "tsconfig.json",

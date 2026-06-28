@@ -1,120 +1,148 @@
-import { NextResponse } from "next/server";
-import { writeFileSync, readFileSync, unlinkSync, mkdirSync, existsSync } from "fs";
-import { join } from "path";
-import { execSync } from "child_process";
-import { buildComparisonHtml } from "@/lib/pdf-template";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Check whether Playwright + Chromium are available for PDF generation.
- * Returns null if OK, or an Arabic error message describing what's missing.
+ * التحقق من API Key
  */
-function checkPdfDeps(): string | null {
-  const scriptPath = join(process.cwd(), "scripts", "html2poster.js");
-  if (!existsSync(scriptPath)) {
-    return "سكريبت توليد PDF مفقود (scripts/html2poster.js). تأكد من تنزيل المشروع كاملاً.";
+function verifyApiKey(req: NextRequest): boolean {
+  const apiKey = req.headers.get("x-api-key");
+  const expectedKey = process.env.PDF_DOWNLOAD_API_KEY;
+
+  if (!expectedKey) {
+    console.warn("[download-pdf] Warning: PDF_DOWNLOAD_API_KEY not set in .env");
+    return true; // للتطوير فقط
   }
 
-  // Check that playwright module is resolvable from the project node_modules.
-  try {
-    execSync(`node -e "require.resolve('playwright')"`, {
-      stdio: "pipe",
-      cwd: process.cwd(),
-      timeout: 5000,
-    });
-  } catch {
-    return [
-      "حزمة 'playwright' غير مثبتة.",
-      "",
-      "لتفعيل توليد PDF، شغّل الأمر التالي في مجلد المشروع:",
-      "    bun install",
-      "",
-      "ثم ثبّت متصفح Chromium:",
-      "    npx playwright install chromium",
-    ].join("\n");
+  if (!apiKey) {
+    return false;
   }
 
-  // Check that a Chromium binary is actually installed.
-  try {
-    const out = execSync(
-      `node -e "const {chromium}=require('playwright'); const p=chromium.executablePath(); console.log(p && require('fs').existsSync(p) ? 'OK' : 'MISSING')"`,
-      { stdio: "pipe", cwd: process.cwd(), timeout: 5000 }
-    ).toString().trim();
-    if (out !== "OK") {
-      return [
-        "متصفح Chromium غير مثبت.",
-        "",
-        "شغّل الأمر التالي لتثبيته:",
-        "    npx playwright install chromium",
-      ].join("\n");
-    }
-  } catch {
-    return "تعذّر التحقق من متصفح Chromium. شغّل: npx playwright install chromium";
-  }
-
-  return null;
+  return apiKey === expectedKey;
 }
 
-export async function GET() {
-  const tmpDir = join(process.cwd(), ".tmp-pdf");
+/**
+ * Rate limiting بسيط (في الإنتاج استخدم Redis)
+ */
+const requestCounts = new Map<string, number[]>();
+
+function checkRateLimit(clientIp: string, maxRequests = 5, windowMs = 60000): boolean {
+  const now = Date.now();
+  const timestamps = requestCounts.get(clientIp) || [];
+
+  // احذف الطلبات القديمة
+  const recentRequests = timestamps.filter((t) => now - t < windowMs);
+
+  if (recentRequests.length >= maxRequests) {
+    return false; // تجاوز الحد
+  }
+
+  recentRequests.push(now);
+  requestCounts.set(clientIp, recentRequests);
+  return true;
+}
+
+export async function GET(req: NextRequest) {
   try {
-    // Pre-flight dependency check — return a clear Arabic error if missing.
-    const depError = checkPdfDeps();
-    if (depError) {
+    // تهيئة Supabase داخل الدالة
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[download-pdf] Missing Supabase credentials");
       return NextResponse.json(
         {
-          ok: false,
-          error: "تعذّر توليد ملف PDF",
-          reason: depError,
-          hint: "باقي ميزات الموقع تعمل بشكل طبيعي — هذه المشكلة تؤثر فقط على زر تحميل PDF.",
+          error: "خطأ في الخادم",
+          detail: "بيانات الاتصال ناقصة",
         },
-        { status: 503 }
+        { status: 500 }
       );
     }
 
-    mkdirSync(tmpDir, { recursive: true });
-    const stamp = Date.now();
-    const htmlPath = join(tmpDir, `comparison-${stamp}.html`);
-    const pdfPath = join(tmpDir, `comparison-${stamp}.pdf`);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
-    const html = buildComparisonHtml();
-    writeFileSync(htmlPath, html, "utf-8");
-
-    const scriptPath = join(process.cwd(), "scripts", "html2poster.js");
-
-    execSync(
-      `node "${scriptPath}" "${htmlPath}" --output "${pdfPath}" --width 794px`,
-      { timeout: 60000, stdio: "pipe" }
-    );
-
-    const pdfBuffer = readFileSync(pdfPath);
-
-    try {
-      unlinkSync(htmlPath);
-      unlinkSync(pdfPath);
-    } catch {
-      /* ignore */
+    // التحقق من API Key
+    if (!verifyApiKey(req)) {
+      return NextResponse.json(
+        {
+          error: "تعذّر الوصول",
+          detail: "مفتاح API غير صحيح",
+        },
+        { status: 401 }
+      );
     }
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
+    // التحقق من Rate Limit
+    const clientIp = req.headers.get("x-forwarded-for") || "unknown";
+    if (!checkRateLimit(clientIp)) {
+      return NextResponse.json(
+        {
+          error: "تم تجاوز حد الطلبات",
+          detail: "حاول لاحقاً",
+        },
+        { status: 429 }
+      );
+    }
+
+    console.log(`[download-pdf] PDF download request from: ${clientIp}`);
+
+    // تحميل الملف من Supabase Storage
+    const bucketName = "pdf-file";
+    const filePath = "comparison-guide-2026.pdf.pdf";
+
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .download(filePath);
+
+    if (error) {
+      console.error(`[download-pdf] Download error: ${error.message}`);
+      return NextResponse.json(
+        {
+          error: "تعذّر تحميل الملف",
+          detail: error.message,
+        },
+        { status: 404 }
+      );
+    }
+
+    if (!data) {
+      console.error("[download-pdf] No data returned");
+      return NextResponse.json(
+        {
+          error: "تعذّر تحميل الملف",
+          detail: "لم يتم استرجاع البيانات",
+        },
+        { status: 500 }
+      );
+    }
+
+    // تحويل البيانات إلى Buffer
+    const buffer = await data.arrayBuffer();
+
+    console.log(`[download-pdf] ✓ PDF downloaded successfully. Size: ${(buffer.byteLength / 1024).toFixed(2)} KB`);
+
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="comparison-guide-2026.pdf"`,
-        "Content-Length": String(pdfBuffer.length),
-        "Cache-Control": "no-store",
+        "Content-Disposition": `attachment; filename="${pdfFileName}"`,
+        "Content-Length": String(buffer.byteLength),
+        "Cache-Control": "private, max-age=3600", // تخزين مؤقت لمدة ساعة
       },
     });
-  } catch (err) {
-    console.error("[download-pdf] error:", err);
+  } catch (error) {
+    console.error("[download-pdf] Error:", error);
     return NextResponse.json(
       {
-        ok: false,
-        error: "تعذّر إنشاء ملف PDF أثناء التوليد",
-        reason: String(err),
-        hint: "تأكد من تثبيت playwright و Chromium: npx playwright install chromium",
+        error: "خطأ في الخادم",
+        detail: error instanceof Error ? error.message : "حدث خطأ غير متوقع",
       },
       { status: 500 }
     );

@@ -199,6 +199,7 @@
 .scroll-elegant {
   scrollbar-width: thin;
   scrollbar-color: oklch(0.7 0.05 150 / 0.6) transparent;
+  -webkit-overflow-scrolling: touch;
 }
 .scroll-elegant::-webkit-scrollbar {
   height: 10px;
@@ -527,3 +528,14 @@
 /* Hide scrollbar where needed */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
